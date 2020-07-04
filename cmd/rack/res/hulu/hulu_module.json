@@ -1,0 +1,72 @@
+{
+    "code": 0,
+    "message": "",
+    "data": [{
+            "id": "18010e0a-e0b2-51f3-b47d-47e4ebb4e005",
+            "name": "Trace.Load",
+            "params": [{
+                    "name": "ip",
+                    "display": "IP地址",
+                    "require": true,
+                    "default": "127.0.0.1",
+                    "regex": "^(?:(?:1[0-9][0-9]\\.)|(?:2[0-4][0-9]\\.)|(?:25[0-5]\\.)|(?:[1-9][0-9]\\.)|(?:[0-9]\\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9]))$"
+                },
+                {
+                    "name": "port",
+                    "display": "端口地址",
+                    "require": false,
+                    "default": "3800",
+                    "regex": "^[1-9]\\d*$"
+                }
+            ],
+            "inputs": [{
+                    "name": "PartTypeId",
+                    "datatype": "INT"
+                },
+                {
+                    "name": "Barcode",
+                    "datatype": "STRING"
+                }
+            ],
+            "outputs": [{
+                    "name": "ErrorCode",
+                    "datatype": "INT"
+                },
+                {
+                    "name": "LoadOk",
+                    "datatype": "BOOL"
+                },
+                {
+                    "name": "LoadNok",
+                    "datatype": "BOOL"
+                }
+            ]
+        },
+        {
+            "id": "18010e0a-e0b2-51f3-b47d-47e4ebb4e006",
+            "name": "Trace.Unload",
+            "inputs": [{
+                    "name": "PartTypeId",
+                    "datatype": "INT"
+                },
+                {
+                    "name": "Barcode",
+                    "datatype": "String"
+                }
+            ],
+            "outputs": [{
+                    "name": "ErrorCode",
+                    "datatype": "INT"
+                },
+                {
+                    "name": "UnloadOk",
+                    "datatype": "BOOL"
+                },
+                {
+                    "name": "UnloadNok",
+                    "datatype": "BOOL"
+                }
+            ]
+        }
+    ]
+}

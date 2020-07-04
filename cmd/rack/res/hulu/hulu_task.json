@@ -1,0 +1,47 @@
+{
+    "inputs": [{
+            "name": "PartTypeId",
+            "linkitem": "18010e0a-e0b2-51f3-b47d-47e4ebb4e007",
+            "device": "设备1",
+            "property": "采集项1",
+            "desc": "设备1.采集项1",
+            "fixedValue": ""
+        },
+        {
+            "name": "Barcode",
+            "linkitem": "",
+            "device": "设备2",
+            "property": "采集项2",
+            "desc": "",
+            "fixedValue": "20"
+        }
+    ],
+    "outputs": [{
+            "name": "ErrorCode",
+            "linkitem": "18010e0a-e0b2-51f3-b47d-47e4ebb4e00x",
+            "device": "设备1",
+            "property": "采集项2",
+            "desc": "设备1.采集项2",
+            "fixedValue": "",
+            "parameterValue": ""
+        },
+        {
+            "name": "LoadOk",
+            "linkitem": "",
+            "device": "设备1",
+            "property": "采集项13",
+            "desc": "",
+            "fixedValue": "20",
+            "parameterValue": ""
+        },
+        {
+            "name": "LoadNok",
+            "linkitem": "",
+            "device": "设备1",
+            "property": "采集项14",
+            "desc": "",
+            "fixedValue": "20",
+            "parameterValue": ""
+        }
+    ]
+}
