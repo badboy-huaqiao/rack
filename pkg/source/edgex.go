@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"rack/pkg/template"
 	"strings"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	zmq "github.com/pebbe/zmq4"
 )
 
 const (
@@ -17,12 +18,67 @@ const (
 	commandsPath = ":48082/api/v1/device/name/"
 )
 
+type EdgeXConnectionConfig struct {
+	Host string
+	// Port int
+}
+
 type EdgeXSource struct {
-	Config template.EdgeXConnectionConfig
+	Config     EdgeXConnectionConfig
+	DataStream chan models.Event
+}
+
+var edgexSource *EdgeXSource
+
+func GetEdgeXSource() *EdgeXSource {
+	if edgexSource == nil {
+		edgexSource = &EdgeXSource{}
+		edgexSource.DataStream = make(chan models.Event, 100)
+		return edgexSource
+	}
+	return edgexSource
 }
 
 func (e EdgeXSource) Source() {
 
+}
+
+func EdgeXDataStream() {
+	q, _ := zmq.NewSocket(zmq.SUB)
+	defer q.Close()
+	if err := q.Connect("tcp://192.168.56.4:5563"); err != nil {
+		fmt.Printf("Error connect message: %s\n", err.Error())
+	}
+	q.SetSubscribe("")
+
+	for {
+		msg, err := q.RecvMessage(0)
+		if err != nil {
+			id, _ := q.GetIdentity()
+			fmt.Printf("Error getting message %s\n", id)
+		} else {
+			var envelope types.MessageEnvelope
+			var event models.Event
+			if err := json.Unmarshal([]byte(msg[1]), &envelope); err != nil {
+				fmt.Printf("Error getting message: %s\n", err.Error())
+			}
+			if err := json.Unmarshal(envelope.Payload, &event); err != nil {
+				fmt.Printf("Error getting message: %s\n", err.Error())
+			}
+			fmt.Printf("getting message %v\n", event)
+			if len(GetEdgeXSource().DataStream) == cap(GetEdgeXSource().DataStream) {
+				<-GetEdgeXSource().DataStream
+			}
+			GetEdgeXSource().DataStream <- event
+		}
+	}
+
+}
+
+func DataPipeline() chan<- models.Event {
+	dataStream := make(chan<- models.Event, 100)
+
+	return dataStream
 }
 
 func (e EdgeXSource) SendCommand(device string, property string, param map[string]interface{}) (result models.Event, err error) {
@@ -61,6 +117,9 @@ func sendGetCmd(url string) (event models.Event, err error) {
 	if err = json.NewDecoder(resp.Body).Decode(&event); err != nil {
 		return event, err
 	}
+
+	fmt.Printf("send Get Cmd:%s, result: %v\n", url, event)
+
 	return event, nil
 }
 
@@ -73,6 +132,7 @@ func sendPutCmd(url string, param map[string]interface{}) (err error) {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("send Put Cmd:%s success\n", url)
 	return nil
 }
 
@@ -81,14 +141,15 @@ func httpRequest(url string, body []byte) (resp *http.Response, err error) {
 	var r *http.Request
 	if body != nil {
 		paramBody := bytes.NewReader(body)
-		r, err = http.NewRequest(http.MethodPut, url, paramBody)
+		if r, err = http.NewRequest(http.MethodPut, url, paramBody); err != nil {
+			return nil, err
+		}
 	} else {
-		r, err = http.NewRequest(http.MethodGet, url, nil)
+		if r, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
+			return nil, err
+		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	if resp, err = client.Do(r); err != nil {
 		return nil, err
 	}
