@@ -7,24 +7,29 @@ import (
 	"rack/pkg/template"
 )
 
-type Executor interface {
-	Run()
-}
-
 type ExecutionContext struct {
+	Ctx     context.Context
 	Plugins map[model.Plugin]*PluginContext
 }
 
-var executionContext *ExecutionContext
+var execCtx *ExecutionContext
 
 type PluginContext struct {
-	Ctx  context.Context
-	Plug *plugin.Plugin
+	Ctx context.Context
+	model.Plugin
+	Templates interface{}
+	Plug      *plugin.Plugin
+	Quit      context.CancelFunc
+}
+
+func GetExecutionContext() *ExecutionContext {
+	return execCtx
 }
 
 func init() {
-	if executionContext == nil {
-		executionContext = &ExecutionContext{
+	if execCtx == nil {
+		execCtx = &ExecutionContext{
+			Ctx:     context.Background(),
 			Plugins: make(map[model.Plugin]*PluginContext),
 		}
 	}
@@ -37,29 +42,46 @@ func loader(path string) (p *plugin.Plugin, err error) {
 	return p, nil
 }
 
-func Load(p model.Plugin) error {
+func Deregister(p model.Plugin) error {
+	for k, v := range execCtx.Plugins {
+		if k.Concrete == p.Concrete && k.Version == p.Version {
+			v.Quit()
+			delete(execCtx.Plugins, k)
+			return nil
+		}
+	}
+	return nil
+}
+
+func Register(p model.Plugin) (err error) {
 	plug, err := loader(p.Path)
 	if err != nil {
 		return err
 	}
+
 	pc := PluginContext{
 		Ctx:  context.Background(),
 		Plug: plug,
 	}
-	executionContext.Plugins[p] = &pc
-	go executor(&pc)
+	execCtx.Plugins[p] = &pc
+	if err := exec(&pc); err != nil {
+		return err
+	}
 	return nil
 }
 
-func executor(plugContext *PluginContext) error {
-	RackContextSym, err := plugContext.Plug.Lookup("RackContext")
+func exec(plugCtx *PluginContext) error {
+	ConcreteSym, err := plugCtx.Plug.Lookup(plugCtx.Concrete)
 	if err != nil {
 		return err
 	}
-
-	switch RackContextSym.(type) {
+	switch v := ConcreteSym.(type) {
 	case template.Hulu:
-		go executeHulu(RackContextSym)
+		go func() {
+			var ctx context.Context
+			ctx, plugCtx.Quit = context.WithCancel(plugCtx.Ctx)
+			template.NewHuluCtx(ctx).Run(v)
+		}()
 	}
 
 	return nil

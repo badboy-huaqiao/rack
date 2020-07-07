@@ -1,7 +1,12 @@
 package model
 
+// type Concrete struct {
+// 	Name    string `json:"Concrete"`
+// 	Version string `json:"version"`
+// }
+
 type Plugin struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	Path    string `json:"path"`
+	Concrete string `json:"Concrete"`
+	Version  string `json:"version"`
+	Path     string `json:"path"`
 }

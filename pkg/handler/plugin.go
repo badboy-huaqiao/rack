@@ -17,6 +17,16 @@ const (
 	pluginSuffix = ".so"
 )
 
+func Register(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var plug model.Plugin
+	if err := json.NewDecoder(r.Body).Decode(&plug); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
 func Upload(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	source, header, err := r.FormFile("file")
